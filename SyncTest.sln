@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.31911.260
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncTestClient", "SyncTestClient\SyncTestClient.csproj", "{AC2E7FC5-D088-4B51-B27D-75126893C69C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncTestServer", "SyncTestServer\SyncTestServer.csproj", "{94530A9A-E99E-4B6A-A0DF-7DE651270201}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Debug|x64.ActiveCfg = Debug|x64
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Debug|x64.Build.0 = Debug|x64
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Release|x64.ActiveCfg = Release|x64
+		{AC2E7FC5-D088-4B51-B27D-75126893C69C}.Release|x64.Build.0 = Release|x64
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Debug|x64.ActiveCfg = Debug|x64
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Debug|x64.Build.0 = Debug|x64
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Release|x64.ActiveCfg = Release|x64
+		{94530A9A-E99E-4B6A-A0DF-7DE651270201}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A56D6FE-C2EE-4453-B2C6-EFDFFB7711BD}
+	EndGlobalSection
+EndGlobal
