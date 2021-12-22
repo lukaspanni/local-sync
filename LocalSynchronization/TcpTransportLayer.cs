@@ -18,13 +18,19 @@ public class TcpTransportLayer : ITransportLayer
 
     public async Task SendMessage(TransportLayerMessage message)
     {
+        Debug.WriteLine("Sending message {0} | {1} | {2}", BitConverter.ToString(new byte[] { message.StartByte }), message.Length, BitConverter.ToString(message.Data.ToArray()));
         var stream = tcpClient.GetStream();
         var sendBufferLength = 5 + message.Data.Length;
         var sendBuffer = new byte[sendBufferLength];
         // copy contents of message to buffer
         //TODO: move serialization/deserialization to TransportLayerMessage
         sendBuffer[0] = message.StartByte;
-        BitConverter.GetBytes(message.Data.Length).CopyTo(sendBuffer, 1);
+        BitConverter.GetBytes(message.Length).CopyTo(sendBuffer, 1);
+        //if ((message.StartByte & 0b10) != 0) //TODO: extract handling of different startBytes
+        //{
+        //    await stream.WriteAsync(new ReadOnlyMemory<byte>(sendBuffer, 0, 5), tokenSource.Token);
+        //    return;
+        //}
         message.Data.CopyTo(new Memory<byte>(sendBuffer, 5, message.Data.Length));
         ReadOnlyMemory<byte> sendMemory = new ReadOnlyMemory<byte>(sendBuffer);
         await stream.WriteAsync(sendMemory, tokenSource.Token);
@@ -38,6 +44,7 @@ public class TcpTransportLayer : ITransportLayer
         var readBuffer = new byte[2048];
         int dataLength = 0;
         int receiveBufferIndex = 0;
+        byte startByte = 0;
         do
         {
             var readTask = stream.ReadAsync(readBuffer, 0, readBuffer.Length, tokenSource.Token);
@@ -53,7 +60,14 @@ public class TcpTransportLayer : ITransportLayer
             int fragmentLength;
             if (receiveBuffer == null)
             {
+                startByte = readBuffer[0];
                 dataLength = BitConverter.ToInt32(readBuffer, 1);   // get data length from first fragment
+                if ((startByte & 0b10) != 0)
+                {
+                    Console.WriteLine("Received ack for {0} bytes", dataLength);
+                    return new TransportLayerMessage(startByte, dataLength, new ReadOnlyMemory<byte>());
+                }
+
                 receiveBuffer = new byte[dataLength];
                 Debug.WriteLine("Prepare to receive {0} bytes of data", dataLength);
 
@@ -69,11 +83,16 @@ public class TcpTransportLayer : ITransportLayer
             receiveBufferIndex += fragmentLength;
         } while (receiveBufferIndex < dataLength);
 
-        return new TransportLayerMessage(receiveBuffer[0], dataLength, new ReadOnlyMemory<byte>(receiveBuffer, 5, dataLength));
+        return new TransportLayerMessage(startByte, dataLength, new ReadOnlyMemory<byte>(receiveBuffer));
     }
 
     public void CancelRunningOperations()
     {
         tokenSource.Cancel();
+    }
+
+    public void Dispose()
+    {
+        tcpClient.Dispose();
     }
 }
