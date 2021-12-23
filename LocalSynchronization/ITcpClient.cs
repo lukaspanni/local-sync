@@ -12,7 +12,7 @@ public interface ITcpClient : IDisposable
 
     ValueTask SendAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken));
 
-    NetworkStream GetStream();  // temporary
+    Task<int> ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken);
 
     void Close();
 
@@ -51,15 +51,14 @@ internal class TcpClientAdapter : ITcpClient
         return Client.GetStream().WriteAsync(buffer, cancellationToken);
     }
 
-    public NetworkStream GetStream()
+    public Task<int> ReceiveAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        return Client.GetStream();
+        return Client.GetStream().ReadAsync(buffer, offset, count, cancellationToken);
     }
+
 
     public void Dispose()
     {
         Client.Dispose();
     }
-
- 
 }

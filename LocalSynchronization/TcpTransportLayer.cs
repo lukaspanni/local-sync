@@ -26,7 +26,6 @@ public class TcpTransportLayer : ITransportLayer
 
     public async Task<TransportLayerMessage> ReceiveMessage()
     {
-        var stream = tcpClient.GetStream();
         var TimeoutTask = Task.Delay(TimeSpan.FromSeconds(readTimeoutSeconds));
         byte[]? receiveBuffer = null;
         var readBuffer = new byte[2048];
@@ -35,7 +34,7 @@ public class TcpTransportLayer : ITransportLayer
         byte startByte = 0;
         do
         {
-            var readTask = stream.ReadAsync(readBuffer, 0, readBuffer.Length, tokenSource.Token);
+            var readTask = tcpClient.ReceiveAsync(readBuffer, 0, readBuffer.Length, tokenSource.Token);
             var race = await Task.WhenAny(readTask, TimeoutTask).ConfigureAwait(false);
             if (race != readTask)
             {
@@ -45,33 +44,17 @@ public class TcpTransportLayer : ITransportLayer
             var readLength = await readTask;
             Debug.WriteLine("Read {0} Bytes", readLength);
             if (readLength == 0) throw new Exception("Received 0 bytes of data");
-            int fragmentLength;
             if (receiveBuffer == null)
             {
-                startByte = readBuffer[0];
                 dataLength = BitConverter.ToInt32(readBuffer, 1);   // get data length from first fragment
-                if ((startByte & 0b10) != 0)
-                {
-                    Console.WriteLine("Received ack for {0} bytes", dataLength);
-                    return new TransportLayerMessage(startByte, dataLength, new ReadOnlyMemory<byte>());
-                }
-
-                receiveBuffer = new byte[dataLength];
-                Debug.WriteLine("Prepare to receive {0} bytes of data", dataLength);
-
-                fragmentLength = readLength - 5;
-                Array.Copy(readBuffer, 5, receiveBuffer, receiveBufferIndex, fragmentLength);
+                receiveBuffer = new byte[dataLength + 5];
             }
-            else
-            {
-                fragmentLength = readLength;
-                Array.Copy(readBuffer, 0, receiveBuffer, receiveBufferIndex, fragmentLength);
-            }
+            int readBytes = Math.Min(receiveBuffer.Length - receiveBufferIndex, readBuffer.Length);
+            Array.Copy(readBuffer, 0, receiveBuffer, receiveBufferIndex, readBytes);
+            receiveBufferIndex += readBuffer.Length;
+        } while (receiveBufferIndex < receiveBuffer.Length);
 
-            receiveBufferIndex += fragmentLength;
-        } while (receiveBufferIndex < dataLength);
-
-        return new TransportLayerMessage(startByte, dataLength, new ReadOnlyMemory<byte>(receiveBuffer));
+        return TransportLayerMessage.Deserialize(receiveBuffer);
     }
 
     public void CancelRunningOperations()
