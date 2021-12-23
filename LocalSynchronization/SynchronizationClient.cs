@@ -8,7 +8,7 @@ namespace LocalSynchronization
     public class SynchronizationClient : IDisposable
     {
         private const int startByte = 0x01;
-        private TcpClient tcpClient;
+        private ITcpClient tcpClient;
         private ITransportLayer? transportLayer;
 
         public IPAddress IPAddress { get; private set; }
@@ -18,7 +18,7 @@ namespace LocalSynchronization
         {
             IPAddress = IPAddress.Parse(ipString);
             Port = port;
-            tcpClient = new TcpClient();
+            tcpClient = new TcpClientAdapter(new TcpClient());
         }
 
         public async Task Connect()
@@ -50,7 +50,7 @@ namespace LocalSynchronization
         public void Dispose()
         {
             Disconnect();
-            transportLayer.CancelRunningOperations();
+            transportLayer?.CancelRunningOperations();
             tcpClient.Dispose();
         }
     }

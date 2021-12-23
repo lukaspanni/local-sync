@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncTestClient", "SyncTestC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncTestServer", "SyncTestServer\SyncTestServer.csproj", "{94530A9A-E99E-4B6A-A0DF-7DE651270201}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalSynchronization", "LocalSynchronization\LocalSynchronization.csproj", "{D095B1CD-7A4D-4FB8-90A6-5839E4F8D0AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LocalSynchronization", "LocalSynchronization\LocalSynchronization.csproj", "{D095B1CD-7A4D-4FB8-90A6-5839E4F8D0AC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalSynchronizationTest", "LocalSynchronizationTest\LocalSynchronizationTest.csproj", "{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,14 @@ Global
 		{D095B1CD-7A4D-4FB8-90A6-5839E4F8D0AC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D095B1CD-7A4D-4FB8-90A6-5839E4F8D0AC}.Release|x64.ActiveCfg = Release|Any CPU
 		{D095B1CD-7A4D-4FB8-90A6-5839E4F8D0AC}.Release|x64.Build.0 = Release|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Debug|x64.Build.0 = Debug|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Release|x64.ActiveCfg = Release|Any CPU
+		{3B9BE4D4-4ACE-4D8C-999B-5A4FC939C91F}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

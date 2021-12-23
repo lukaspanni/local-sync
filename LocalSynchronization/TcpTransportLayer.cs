@@ -2,13 +2,15 @@
 using System.Diagnostics;
 using System.Net.Sockets;
 
+namespace LocalSynchronization;
+
 public class TcpTransportLayer : ITransportLayer
 {
-    private TcpClient tcpClient;
+    private ITcpClient tcpClient;
     private CancellationTokenSource tokenSource = new CancellationTokenSource();
     private readonly int readTimeoutSeconds = 30;
 
-    public TcpTransportLayer(TcpClient tcpClient)
+    public TcpTransportLayer(ITcpClient tcpClient)
     {
         if (tcpClient == null || !tcpClient.Connected)
             throw new ArgumentException("Passed TCPClient is not valid");
@@ -18,22 +20,8 @@ public class TcpTransportLayer : ITransportLayer
 
     public async Task SendMessage(TransportLayerMessage message)
     {
-        Debug.WriteLine("Sending message {0} | {1} | {2}", BitConverter.ToString(new byte[] { message.StartByte }), message.Length, BitConverter.ToString(message.Data.ToArray()));
-        var stream = tcpClient.GetStream();
-        var sendBufferLength = 5 + message.Data.Length;
-        var sendBuffer = new byte[sendBufferLength];
-        // copy contents of message to buffer
-        //TODO: move serialization/deserialization to TransportLayerMessage
-        sendBuffer[0] = message.StartByte;
-        BitConverter.GetBytes(message.Length).CopyTo(sendBuffer, 1);
-        //if ((message.StartByte & 0b10) != 0) //TODO: extract handling of different startBytes
-        //{
-        //    await stream.WriteAsync(new ReadOnlyMemory<byte>(sendBuffer, 0, 5), tokenSource.Token);
-        //    return;
-        //}
-        message.Data.CopyTo(new Memory<byte>(sendBuffer, 5, message.Data.Length));
-        ReadOnlyMemory<byte> sendMemory = new ReadOnlyMemory<byte>(sendBuffer);
-        await stream.WriteAsync(sendMemory, tokenSource.Token);
+        Debug.WriteLine("Sending message {0} | {1} | {2}", BitConverter.ToString(new byte[] { message.StartByte }), message.Length, BitConverter.ToString(message.Payload.ToArray()));
+        await tcpClient.SendAsync(message.Serialize());
     }
 
     public async Task<TransportLayerMessage> ReceiveMessage()

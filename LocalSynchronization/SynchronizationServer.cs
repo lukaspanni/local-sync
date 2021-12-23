@@ -27,9 +27,10 @@ namespace LocalSynchronization
             var token = tokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                var transportLayer = new TcpTransportLayer(client);
+                var tcpClient = await listener.AcceptTcpClientAsync(token).ConfigureAwait(false);
+                var transportLayer = new TcpTransportLayer(new TcpClientAdapter(tcpClient));
                 HandleConnection(transportLayer, token);
+
             }
         }
 
@@ -44,7 +45,7 @@ namespace LocalSynchronization
                     try
                     {
                         var message = await transportLayer.ReceiveMessage().ConfigureAwait(false);
-                        Console.WriteLine("Received {0} bytes: {1}", message.Length, Encoding.UTF8.GetString(message.Data.ToArray()));
+                        Console.WriteLine("Received {0} bytes: {1}", message.Length, Encoding.UTF8.GetString(message.Payload.ToArray()));
                         var response = new TransportLayerMessage(0b11, message.Length, new ReadOnlyMemory<byte>());
                         await transportLayer.SendMessage(response).ConfigureAwait(false);
                     }
