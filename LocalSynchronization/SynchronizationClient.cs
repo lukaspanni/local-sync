@@ -1,12 +1,11 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace LocalSynchronization;
 
-
 public class SynchronizationClient : IDisposable
 {
+
     private const int startByte = 0x01;
     private ITcpClient tcpClient;
     private ITransportLayer? transportLayer;
@@ -20,6 +19,12 @@ public class SynchronizationClient : IDisposable
         Port = port;
 
         tcpClient = BuildClient(useTls);
+    }
+
+
+    public void ImportServerCertificate(string base64EncodedCertificate)
+    {
+        Keystore.SetAcceptedRemoteCertificate(base64EncodedCertificate);
     }
 
     public async Task Connect()
@@ -42,6 +47,7 @@ public class SynchronizationClient : IDisposable
         return await transportLayer.ReceiveMessage();
     }
 
+   
 
     public void Disconnect()
     {

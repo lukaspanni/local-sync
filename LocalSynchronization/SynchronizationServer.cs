@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace LocalSynchronization
@@ -9,14 +10,20 @@ namespace LocalSynchronization
     {
         private TcpListener listener;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
+        private X509Certificate2 certificate;
 
         public IPAddress IPAddress { get; private set; }
         public int Port { get; private set; } = 4820;
+        
+        public byte[] PublicKeyBytes => certificate.Export(X509ContentType.Cert);
+
 
         public SynchronizationServer(string ipString, int port)
         {
             IPAddress = IPAddress.Parse(ipString);
             Port = port;
+            //TODO: provide certificate from a local keystore, or generate if nothing found
+            certificate = Keystore.GenerateSelfSignedCertificate("testserver");
         }
 
         public async Task StartListening()
@@ -64,12 +71,9 @@ namespace LocalSynchronization
             tokenSource.Cancel();
         }
 
-        private static ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
+        private ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
         {
             if (!useTls) return new TcpClientAdapter(tcpClient);
-
-            //TODO: provide certificate from a local keystore, or generate if nothing found
-            var certificate = Keystore.GenerateSelfSignedCertificate("testserver");
             return new TlsTcpClientAdapter(tcpClient, certificate);
         }
 
