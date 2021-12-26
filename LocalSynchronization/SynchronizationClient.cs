@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization;
 
@@ -9,16 +10,20 @@ public class SynchronizationClient : IDisposable
     private const int startByte = 0x01;
     private ITcpClient tcpClient;
     private ITransportLayer? transportLayer;
+    private X509Certificate2 certificate;
+
 
     public IPAddress IPAddress { get; private set; }
     public int Port { get; private set; } = 4820;
 
-    public SynchronizationClient(string ipString, int port, bool useTls = true)
+    public byte[] PublicKeyBytes => certificate.Export(X509ContentType.Cert);
+
+    public SynchronizationClient(string ipString, int port)
     {
         IPAddress = IPAddress.Parse(ipString);
         Port = port;
 
-        tcpClient = BuildClient(useTls);
+        certificate = Keystore.GetCertificateByCommonName("testclient");
     }
 
 
@@ -29,6 +34,7 @@ public class SynchronizationClient : IDisposable
 
     public async Task Connect()
     {
+        tcpClient = BuildClient(Keystore.AcceptedCertificateHost);
         IPEndPoint endpoint = new IPEndPoint(IPAddress, Port);
         await tcpClient.ConnectAsync(endpoint);
         transportLayer = new TcpTransportLayer(tcpClient);
@@ -47,7 +53,7 @@ public class SynchronizationClient : IDisposable
         return await transportLayer.ReceiveMessage();
     }
 
-   
+
 
     public void Disconnect()
     {
@@ -61,10 +67,10 @@ public class SynchronizationClient : IDisposable
         tcpClient.Dispose();
     }
 
-    private static ITcpClient BuildClient(bool useTls = true)
+    private ITcpClient BuildClient(string targetHost, bool useTls = true)
     {
         if (!useTls) return new TcpClientAdapter(new TcpClient());
-        return new TlsTcpClientAdapter(new TcpClient(), "testserver", Keystore.GenerateSelfSignedCertificate("testclient"));
+        return new TlsTcpClientAdapter(new TcpClient(), targetHost, certificate);
     }
 }
 
