@@ -16,11 +16,13 @@ internal class TlsTcpClientAdapter : TcpClientAdapter
     private X509Certificate2? serverCertificate;
     private X509Certificate2Collection clientCertificates = new X509Certificate2Collection();
     private string targetHost;
+    private RemoteCertificateValidationCallback? validateRemoteCertificate;
 
     protected override Stream? CommunicationStream => secureStream;
 
-    public TlsTcpClientAdapter(TcpClient client, X509Certificate2? certificate) : base(client)
+    public TlsTcpClientAdapter(TcpClient client, RemoteCertificateValidationCallback certificateValidationCallback, X509Certificate2? certificate) : base(client)
     {
+        validateRemoteCertificate = certificateValidationCallback;
         targetHost = string.Empty;
         // server: gets initialized with a connected socket and a certificate
         if (Connected && certificate != null)
@@ -30,8 +32,9 @@ internal class TlsTcpClientAdapter : TcpClientAdapter
         }
     }
 
-    public TlsTcpClientAdapter(TcpClient client, string host = "testserver", X509Certificate? certificate = null) : base(client)
+    public TlsTcpClientAdapter(TcpClient client, RemoteCertificateValidationCallback certificateValidationCallback, string host, X509Certificate? certificate = null) : base(client)
     {
+        validateRemoteCertificate = certificateValidationCallback;
         // client: gets initialized with not connected socket and a target host
         // tls init can only happen after connect
         targetHost = host;
@@ -52,14 +55,13 @@ internal class TlsTcpClientAdapter : TcpClientAdapter
 
     private async Task InitializeSecureStream(TlsMode mode)
     {
+        secureStream = new SslStream(Client.GetStream(), false, validateRemoteCertificate, null);
         if (mode == TlsMode.Server && serverCertificate != null)
         {
-            secureStream = new SslStream(Client.GetStream(), false, new RemoteCertificateValidationCallback(Keystore.ValidateClientCertificate), null);
             await secureStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: true);
         }
         if (mode == TlsMode.Client)
         {
-            secureStream = new SslStream(Client.GetStream(), false, new RemoteCertificateValidationCallback(Keystore.ValidateServerCertificate), null);
             await secureStream.AuthenticateAsClientAsync(targetHost, clientCertificates, true);
         }
     }
