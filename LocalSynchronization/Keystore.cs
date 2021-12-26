@@ -6,23 +6,35 @@ namespace LocalSynchronization;
 
 internal class Keystore
 {
-    private static X509Certificate2? acceptedCertificate;
-    private static Dictionary<string, X509Certificate2> localCertificates = new Dictionary<string, X509Certificate2>();
+    private bool pairing = true;    // TODO: cleaner
+    private IPersistenceProvider persistenceProvider;
+    private X509Certificate2? acceptedCertificate;
+    private Dictionary<string, X509Certificate2> localCertificates = new Dictionary<string, X509Certificate2>();
 
-    public static string AcceptedCertificateHost => acceptedCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
-    public static void SetAcceptedRemoteCertificate(string base64EncodedCertificate)
+    public string AcceptedCertificateHost => acceptedCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
+
+    internal Keystore() : this(null)
     {
-        SetAcceptedRemoteCertificate(new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate)));
+
     }
 
-    public static void SetAcceptedRemoteCertificate(X509Certificate2 certificate)
+    internal Keystore(IPersistenceProvider persistence)
+    {
+        persistenceProvider = persistence;
+    }
+
+    public void SetAcceptedRemoteCertificate(string base64EncodedCertificate)
+    {
+        SetAcceptedRemoteCertificate(new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate)));
+    }   
+    public void SetAcceptedRemoteCertificate(X509Certificate2 certificate)
     {
         if (acceptedCertificate != null) throw new InvalidOperationException("A certificate has already been set");
         if (certificate == null || certificate.HasPrivateKey) throw new ArgumentException("Provided certificate cannot be used for this operation");
         acceptedCertificate = certificate;
     }
 
-    public static X509Certificate2 GetCertificateByCommonName(string commonName)
+    public X509Certificate2 GetCertificateByCommonName(string commonName)
     {
         var success = localCertificates.TryGetValue(commonName, out X509Certificate2? certificate);
         if (!success || certificate == null)
@@ -33,7 +45,7 @@ internal class Keystore
         return certificate;
     }
 
-    private static X509Certificate2 GenerateSelfSignedCertificate(string commonName)
+    private X509Certificate2 GenerateSelfSignedCertificate(string commonName)
     {
         var ecdsa = ECDsa.Create(ECCurve.CreateFromValue("1.2.840.10045.3.1.7"));
         var name = new X500DistinguishedName($"C=DE,CN={commonName}");
@@ -42,7 +54,7 @@ internal class Keystore
         return new X509Certificate2(cert.Export(X509ContentType.Pkcs12));
     }
 
-    public static bool ValidateServerCertificate(
+    public bool ValidateServerCertificate(
        object sender,
        X509Certificate certificate,
        X509Chain chain,
@@ -54,8 +66,7 @@ internal class Keystore
     }
 
 
-    private static bool pairing = true;
-    public static bool ValidateClientCertificate(
+    public bool ValidateClientCertificate(
       object sender,
       X509Certificate certificate,
       X509Chain chain,
@@ -68,3 +79,7 @@ internal class Keystore
     }
 }
 
+internal interface IPersistenceProvider
+{
+
+}

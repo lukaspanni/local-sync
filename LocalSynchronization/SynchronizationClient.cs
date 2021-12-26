@@ -8,7 +8,8 @@ public class SynchronizationClient : IDisposable
 {
 
     private const int startByte = 0x01;
-    private ITcpClient tcpClient;
+    private Keystore clientKeystore;
+    private ITcpClient? tcpClient;
     private ITransportLayer? transportLayer;
     private X509Certificate2 certificate;
 
@@ -18,23 +19,25 @@ public class SynchronizationClient : IDisposable
 
     public byte[] PublicKeyBytes => certificate.Export(X509ContentType.Cert);
 
-    public SynchronizationClient(string ipString, int port)
+    public SynchronizationClient(string ipString, int port) : this(ipString, port, new Keystore()) { }
+
+    internal SynchronizationClient(string ipString, int port, Keystore keystore)
     {
         IPAddress = IPAddress.Parse(ipString);
         Port = port;
+        clientKeystore = keystore;
 
-        certificate = Keystore.GetCertificateByCommonName("testclient");
+        certificate = clientKeystore.GetCertificateByCommonName("testclient");
     }
-
 
     public void ImportServerCertificate(string base64EncodedCertificate)
     {
-        Keystore.SetAcceptedRemoteCertificate(base64EncodedCertificate);
+        clientKeystore.SetAcceptedRemoteCertificate(base64EncodedCertificate);
     }
 
     public async Task Connect()
     {
-        tcpClient = BuildClient(Keystore.AcceptedCertificateHost);
+        tcpClient = BuildClient(clientKeystore.AcceptedCertificateHost);
         IPEndPoint endpoint = new IPEndPoint(IPAddress, Port);
         await tcpClient.ConnectAsync(endpoint);
         transportLayer = new TcpTransportLayer(tcpClient);
@@ -64,13 +67,13 @@ public class SynchronizationClient : IDisposable
     {
         Disconnect();
         transportLayer?.CancelRunningOperations();
-        tcpClient.Dispose();
+        tcpClient?.Dispose();
     }
 
     private ITcpClient BuildClient(string targetHost, bool useTls = true)
     {
         if (!useTls) return new TcpClientAdapter(new TcpClient());
-        return new TlsTcpClientAdapter(new TcpClient(), targetHost, certificate);
+        return new TlsTcpClientAdapter(new TcpClient(), new System.Net.Security.RemoteCertificateValidationCallback(clientKeystore.ValidateServerCertificate), targetHost, certificate);
     }
 }
 
