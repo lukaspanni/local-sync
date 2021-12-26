@@ -6,6 +6,19 @@ namespace LocalSynchronization;
 
 internal class Keystore
 {
+    private static X509Certificate2? acceptedCertificate;
+
+    public static void SetAcceptedRemoteCertificate(string base64EncodedCertificate)
+    {
+        SetAcceptedRemoteCertificate(new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate)));
+    }
+
+    public static void SetAcceptedRemoteCertificate(X509Certificate2 certificate)
+    {
+        if (acceptedCertificate != null) throw new InvalidOperationException("A certificate has already been set");
+        if (certificate == null || certificate.HasPrivateKey) throw new ArgumentException("Provided certificate cannot be used for this operation");
+        acceptedCertificate = certificate;
+    }
 
     public static X509Certificate2 GenerateSelfSignedCertificate(string commonName)
     {
@@ -22,26 +35,23 @@ internal class Keystore
        X509Chain chain,
        SslPolicyErrors sslPolicyErrors)
     {
-        if (sslPolicyErrors == SslPolicyErrors.None)
-            return true;
-
-        Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
-        if (chain.ChainStatus[0].Status == X509ChainStatusFlags.UntrustedRoot)
-        {
-            return true; // allow self signed certificate
-        }
-
+        if (acceptedCertificate != null)
+            return acceptedCertificate.Equals(certificate);
         return false;
     }
 
+
+    private static bool pairing = true;
     public static bool ValidateClientCertificate(
       object sender,
       X509Certificate certificate,
       X509Chain chain,
       SslPolicyErrors sslPolicyErrors)
     {
-        //TODO: accept without certificate in pairing mode, otherwise verify certificate 
-        return true;
+        if (pairing) return true;
+        if (acceptedCertificate != null)
+            return acceptedCertificate.Equals(certificate);
+        return false;
     }
 }
 
