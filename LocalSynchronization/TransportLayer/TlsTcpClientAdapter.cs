@@ -52,8 +52,8 @@ internal class TlsTcpClientAdapter : TcpClientAdapter
     {
         if (mode == TlsMode.Server && serverCertificate != null)
         {
-            secureStream = new SslStream(Client.GetStream(), false);
-            await secureStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired: false, checkCertificateRevocation: true);
+            secureStream = new SslStream(Client.GetStream(), false, new RemoteCertificateValidationCallback(ValidateClientCertificate), null);
+            await secureStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: true);
         }
         if (mode == TlsMode.Client)
         {
@@ -78,6 +78,16 @@ internal class TlsTcpClientAdapter : TcpClientAdapter
         }
 
         return false;
+    }
+
+    private bool ValidateClientCertificate(
+      object sender,
+      X509Certificate certificate,
+      X509Chain chain,
+      SslPolicyErrors sslPolicyErrors)
+    { 
+        //TODO: accept without certificate in pairing mode, otherwise verify certificate 
+        return true;
     }
 
     public static X509Certificate2 GenerateSelfSignedCertificate()
