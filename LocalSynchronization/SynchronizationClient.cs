@@ -58,7 +58,7 @@ public class SynchronizationClient : IDisposable
     private static ITcpClient BuildClient(bool useTls = true)
     {
         if (!useTls) return new TcpClientAdapter(new TcpClient());
-        return new TlsTcpClientAdapter(new TcpClient());
+        return new TlsTcpClientAdapter(new TcpClient(), "testserver", Keystore.GenerateSelfSignedCertificate("testclient"));
     }
 }
 

@@ -68,8 +68,8 @@ namespace LocalSynchronization
         {
             if (!useTls) return new TcpClientAdapter(tcpClient);
 
-            //TODO: provide certificate from a local keystore
-            var certificate = TlsTcpClientAdapter.GenerateSelfSignedCertificate();
+            //TODO: provide certificate from a local keystore, or generate if nothing found
+            var certificate = Keystore.GenerateSelfSignedCertificate("testserver");
             return new TlsTcpClientAdapter(tcpClient, certificate);
         }
 
