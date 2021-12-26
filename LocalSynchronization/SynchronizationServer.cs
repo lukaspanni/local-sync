@@ -23,7 +23,7 @@ namespace LocalSynchronization
             IPAddress = IPAddress.Parse(ipString);
             Port = port;
             //TODO: provide certificate from a local keystore, or generate if nothing found
-            certificate = Keystore.GenerateSelfSignedCertificate("testserver");
+            certificate = Keystore.GetCertificateByCommonName("testserver");
         }
 
         public async Task StartListening()

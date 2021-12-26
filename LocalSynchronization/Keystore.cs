@@ -7,7 +7,9 @@ namespace LocalSynchronization;
 internal class Keystore
 {
     private static X509Certificate2? acceptedCertificate;
+    private static Dictionary<string, X509Certificate2> localCertificates = new Dictionary<string, X509Certificate2>();
 
+    public static string AcceptedCertificateHost => acceptedCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
     public static void SetAcceptedRemoteCertificate(string base64EncodedCertificate)
     {
         SetAcceptedRemoteCertificate(new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate)));
@@ -20,7 +22,18 @@ internal class Keystore
         acceptedCertificate = certificate;
     }
 
-    public static X509Certificate2 GenerateSelfSignedCertificate(string commonName)
+    public static X509Certificate2 GetCertificateByCommonName(string commonName)
+    {
+        var success = localCertificates.TryGetValue(commonName, out X509Certificate2? certificate);
+        if (!success || certificate == null)
+        {
+            certificate = GenerateSelfSignedCertificate(commonName);
+            localCertificates.Add(commonName, certificate);
+        }
+        return certificate;
+    }
+
+    private static X509Certificate2 GenerateSelfSignedCertificate(string commonName)
     {
         var ecdsa = ECDsa.Create(ECCurve.CreateFromValue("1.2.840.10045.3.1.7"));
         var name = new X500DistinguishedName($"C=DE,CN={commonName}");
