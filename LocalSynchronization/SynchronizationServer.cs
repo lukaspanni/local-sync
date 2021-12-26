@@ -27,10 +27,9 @@ namespace LocalSynchronization
             var token = tokenSource.Token;
             while (!token.IsCancellationRequested)
             {
-                var tcpClient = await listener.AcceptTcpClientAsync(token).ConfigureAwait(false);
-                var transportLayer = new TcpTransportLayer(new TcpClientAdapter(tcpClient));
+                var tcpClient = await listener.AcceptTcpClientAsync(token).ConfigureAwait(false);                
+                var transportLayer = new TcpTransportLayer(BuildClient(tcpClient));
                 HandleConnection(transportLayer, token);
-
             }
         }
 
@@ -65,6 +64,14 @@ namespace LocalSynchronization
             tokenSource.Cancel();
         }
 
+        private static ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
+        {
+            if (!useTls) return new TcpClientAdapter(tcpClient);
+
+            //TODO: provide certificate from a local keystore
+            var certificate = TlsTcpClientAdapter.GenerateSelfSignedCertificate();
+            return new TlsTcpClientAdapter(tcpClient, certificate);
+        }
 
     }
 

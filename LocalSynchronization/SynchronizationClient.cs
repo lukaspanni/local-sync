@@ -2,56 +2,63 @@
 using System.Net.Sockets;
 using System.Text;
 
-namespace LocalSynchronization
+namespace LocalSynchronization;
+
+
+public class SynchronizationClient : IDisposable
 {
+    private const int startByte = 0x01;
+    private ITcpClient tcpClient;
+    private ITransportLayer? transportLayer;
 
-    public class SynchronizationClient : IDisposable
+    public IPAddress IPAddress { get; private set; }
+    public int Port { get; private set; } = 4820;
+
+    public SynchronizationClient(string ipString, int port, bool useTls = true)
     {
-        private const int startByte = 0x01;
-        private ITcpClient tcpClient;
-        private ITransportLayer? transportLayer;
+        IPAddress = IPAddress.Parse(ipString);
+        Port = port;
 
-        public IPAddress IPAddress { get; private set; }
-        public int Port { get; private set; } = 4820;
+        tcpClient = BuildClient(useTls);
+    }
 
-        public SynchronizationClient(string ipString, int port)
-        {
-            IPAddress = IPAddress.Parse(ipString);
-            Port = port;
-            tcpClient = new TcpClientAdapter(new TcpClient());
-        }
+    public async Task Connect()
+    {
+        IPEndPoint endpoint = new IPEndPoint(IPAddress, Port);
+        await tcpClient.ConnectAsync(endpoint);
+        transportLayer = new TcpTransportLayer(tcpClient);
+    }
 
-        public async Task Connect()
-        {
-            IPEndPoint endpoint = new IPEndPoint(IPAddress, Port);
-            await tcpClient.ConnectAsync(endpoint);
-            transportLayer = new TcpTransportLayer(tcpClient);
-        }
+    public async Task Send(byte[] dataBuffer)
+    {
+        if (transportLayer == null) throw new InvalidOperationException();
+        var message = new TransportLayerMessage(startByte, dataBuffer.Length, new ReadOnlyMemory<byte>(dataBuffer));
+        await transportLayer.SendMessage(message);
+    }
 
-        public async Task Send(byte[] dataBuffer)
-        {
-            if (transportLayer == null) throw new InvalidOperationException();
-            var message = new TransportLayerMessage(startByte, dataBuffer.Length, new ReadOnlyMemory<byte>(dataBuffer));
-            await transportLayer.SendMessage(message);
-        }
-
-        public async Task<TransportLayerMessage> Receive()
-        {
-            if (transportLayer == null) throw new InvalidOperationException();
-            return await transportLayer.ReceiveMessage();
-        }
+    public async Task<TransportLayerMessage> Receive()
+    {
+        if (transportLayer == null) throw new InvalidOperationException();
+        return await transportLayer.ReceiveMessage();
+    }
 
 
-        public void Disconnect()
-        {
-            tcpClient.Close();
-        }
+    public void Disconnect()
+    {
+        tcpClient.Close();
+    }
 
-        public void Dispose()
-        {
-            Disconnect();
-            transportLayer?.CancelRunningOperations();
-            tcpClient.Dispose();
-        }
+    public void Dispose()
+    {
+        Disconnect();
+        transportLayer?.CancelRunningOperations();
+        tcpClient.Dispose();
+    }
+
+    private static ITcpClient BuildClient(bool useTls = true)
+    {
+        if (!useTls) return new TcpClientAdapter(new TcpClient());
+        return new TlsTcpClientAdapter(new TcpClient());
     }
 }
+

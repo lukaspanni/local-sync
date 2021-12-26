@@ -5,7 +5,7 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        using var client = new SynchronizationClient("127.0.0.1", 4820);
+        using var client = new SynchronizationClient("127.0.0.1", 8080);
         await client.Connect();
         Console.WriteLine("Connected to {0}:{1}", client.IPAddress.ToString(), client.Port);
         while (true)
