@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization;
 
+//TODO: extract common base class
 public class SynchronizationClient : IDisposable
 {
 
@@ -12,33 +13,39 @@ public class SynchronizationClient : IDisposable
     private CertificateStore clientCertificateStore;
     private ITcpClient? tcpClient;
     private ITransportLayer? transportLayer;
-    private X509Certificate2 certificate;
+    private X509Certificate2 localCertificate;
 
+    private X509Certificate2? acceptedRemoteCertificate;
 
     public IPAddress IPAddress { get; private set; }
     public int Port { get; private set; } = 4820;
 
-    public byte[] PublicKeyBytes => certificate.Export(X509ContentType.Cert);
+    public byte[] PublicKeyBytes => localCertificate.Export(X509ContentType.Cert);
+
+    private string RemoteHost => acceptedRemoteCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
+
 
     public SynchronizationClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SynchronizationClient(string ipString, int port, CertificateStore keystore)
+    internal SynchronizationClient(string ipString, int port, CertificateStore certStore)
     {
         IPAddress = IPAddress.Parse(ipString);
         Port = port;
-        clientCertificateStore = keystore;
+        clientCertificateStore = certStore;
 
-        certificate = clientCertificateStore.GetCertificateByCommonName("testclient");
+        localCertificate = clientCertificateStore.GetOrGenerateLocalCertificate("testclient");
     }
 
-    public void ImportServerCertificate(string base64EncodedCertificate)
+    public void ImportRemoteCertificate(string base64EncodedCertificate)
     {
-        clientCertificateStore.SetAcceptedRemoteCertificate(base64EncodedCertificate);
+        var imported = new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate));
+        if (imported == null || imported.HasPrivateKey) throw new ArgumentException("Provided certificate cannot be used for this operation");
+        acceptedRemoteCertificate = imported;
     }
 
     public async Task Connect()
     {
-        tcpClient = BuildClient(clientCertificateStore.RemoteHost);
+        tcpClient = BuildClient(RemoteHost);
         IPEndPoint endpoint = new IPEndPoint(IPAddress, Port);
         await tcpClient.ConnectAsync(endpoint);
         transportLayer = new TcpTransportLayer(tcpClient);
@@ -58,10 +65,9 @@ public class SynchronizationClient : IDisposable
     }
 
 
-
     public void Disconnect()
     {
-        tcpClient.Close();
+        tcpClient?.Close();
     }
 
     public void Dispose()
@@ -71,15 +77,15 @@ public class SynchronizationClient : IDisposable
         tcpClient?.Dispose();
     }
 
-    private ITcpClient BuildClient(string targetHost, bool useTls = true)
+    private ITcpClient BuildClient(string targetHost,bool useTls = true)
     {
         if (!useTls) return new TcpClientAdapter(new TcpClient());
 
-        if (clientCertificateStore.AccpetedCertificate == null) throw new InvalidOperationException("No server certificate has been imported");
+        if (acceptedRemoteCertificate == null) throw new InvalidOperationException("No server certificate has been imported");
         RemoteCertificateValidationCallback certificateValidation = new((object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
-            clientCertificateStore.AccpetedCertificate != null && clientCertificateStore.AccpetedCertificate.Equals(certificate)
+            acceptedRemoteCertificate != null && acceptedRemoteCertificate.Equals(certificate)
         );
-        return new TlsTcpClientAdapter(new TcpClient(), certificateValidation, targetHost, certificate);
+        return new TlsTcpClientAdapter(new TcpClient(), certificateValidation, targetHost, localCertificate);
     }
 }
 
