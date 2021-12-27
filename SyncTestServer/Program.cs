@@ -4,7 +4,7 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var server = new SynchronizationServer("0.0.0.0", 8080);
+        var server = new SynchronizationServer("0.0.0.0", 8080, true);
         Console.CancelKeyPress += delegate
         {
             Console.WriteLine("Stopping");
