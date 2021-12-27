@@ -4,7 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization;
 
-internal class CertificateStore
+public class CertificateStore
 {
     private ISecurePersistenceProvider persistenceProvider;
     private Dictionary<string, X509Certificate2> localCertificates = new Dictionary<string, X509Certificate2>();
