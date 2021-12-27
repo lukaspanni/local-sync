@@ -5,13 +5,15 @@
 public class TransportLayerMessage
 {
     public byte StartByte { get; init; }
-    public int Length { get; init; }    
+    public int Length { get; init; }
     public ReadOnlyMemory<byte> Payload { get; init; }
+
+    public TransportLayerMessage(int length, ReadOnlyMemory<byte> payload) : this(0x01, length, payload) { }
 
     public TransportLayerMessage(byte startByte, int length, ReadOnlyMemory<byte> payload)
     {
         StartByte = startByte;
-        Length = length;    
+        Length = length;
         Payload = payload;
     }
 

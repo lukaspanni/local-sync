@@ -6,32 +6,17 @@ using System.Text;
 
 namespace LocalSynchronization;
 
-public class SynchronizationServer
+public class SynchronizationServer : SynchronizationBase
 {
     private bool pairing = true;
-    private CertificateStore serverCertificateStore;
     private TcpListener? listener;
     private CancellationTokenSource tokenSource = new CancellationTokenSource();
-    private X509Certificate2 localCertificate;
-    
-    private X509Certificate2? acceptedRemoteCertificate;
     private X509Certificate2? pairingCertificate;   // temporary
-
-
-    public IPAddress IPAddress { get; private set; }
-    public int Port { get; private set; } = 4820;
-
-    public byte[] PublicKeyBytes => localCertificate.Export(X509ContentType.Cert);
 
     public SynchronizationServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SynchronizationServer(string ipString, int port, CertificateStore certStore)
+    internal SynchronizationServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
     {
-        IPAddress = IPAddress.Parse(ipString);
-        Port = port;
-        serverCertificateStore = certStore;
-
-        localCertificate = serverCertificateStore.GetOrGenerateLocalCertificate("testserver");
     }
 
     public async Task StartListening()
@@ -48,12 +33,9 @@ public class SynchronizationServer
         }
     }
 
-    public void ImportRemoteCertificate(string base64EncodedCertificate)
+    public override void ImportRemoteCertificate(string base64EncodedCertificate)
     {
-        // import certificate of already paired client        
-        var imported = new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate));
-        if (imported == null || imported.HasPrivateKey) throw new ArgumentException("Provided certificate cannot be used for this operation");
-        acceptedRemoteCertificate = imported;
+        base.ImportRemoteCertificate(base64EncodedCertificate);
         pairing = false;
     }
 
@@ -94,7 +76,7 @@ public class SynchronizationServer
         tokenSource.Cancel();
     }
 
-    private ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
+    protected override ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
     {
         if (!useTls) return new TcpClientAdapter(tcpClient);
         RemoteCertificateValidationCallback certificateValidation = new((object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
@@ -113,7 +95,6 @@ public class SynchronizationServer
         );
         return new TlsTcpClientAdapter(tcpClient, certificateValidation, localCertificate);
     }
-
 }
 
 
