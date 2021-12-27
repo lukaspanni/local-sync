@@ -10,7 +10,7 @@ public class Program
         Console.Write("Enter server certificate: ");
         var base64EncodedCertificate = Console.ReadLine();
         if (base64EncodedCertificate == null) throw new ArgumentException("Invalid input");
-        client.ImportServerCertificate(base64EncodedCertificate);
+        client.ImportRemoteCertificate(base64EncodedCertificate);
 
         await client.Connect();
         Console.WriteLine("Connected to {0}:{1}", client.IPAddress.ToString(), client.Port);

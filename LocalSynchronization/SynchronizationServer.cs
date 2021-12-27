@@ -8,30 +8,30 @@ namespace LocalSynchronization;
 
 public class SynchronizationServer
 {
+    private bool pairing = true;
     private CertificateStore serverCertificateStore;
     private TcpListener? listener;
     private CancellationTokenSource tokenSource = new CancellationTokenSource();
-    private X509Certificate2 certificate;
+    private X509Certificate2 localCertificate;
+    
+    private X509Certificate2? acceptedRemoteCertificate;
+    private X509Certificate2? pairingCertificate;   // temporary
 
-    private X509Certificate2? pairingCertificate;
 
-    public bool Pairing { get; set; } = false;
     public IPAddress IPAddress { get; private set; }
     public int Port { get; private set; } = 4820;
 
-    public byte[] PublicKeyBytes => certificate.Export(X509ContentType.Cert);
+    public byte[] PublicKeyBytes => localCertificate.Export(X509ContentType.Cert);
 
-    public SynchronizationServer(string ipString, int port) : this(ipString, port, false) { }
-    public SynchronizationServer(string ipString, int port, bool pairing) : this(ipString, port, pairing, new CertificateStore()) { }
+    public SynchronizationServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SynchronizationServer(string ipString, int port, bool pairing, CertificateStore keystore)
+    internal SynchronizationServer(string ipString, int port, CertificateStore certStore)
     {
         IPAddress = IPAddress.Parse(ipString);
         Port = port;
-        Pairing = pairing;
-        serverCertificateStore = keystore;
+        serverCertificateStore = certStore;
 
-        certificate = serverCertificateStore.GetCertificateByCommonName("testserver");
+        localCertificate = serverCertificateStore.GetOrGenerateLocalCertificate("testserver");
     }
 
     public async Task StartListening()
@@ -48,11 +48,19 @@ public class SynchronizationServer
         }
     }
 
+    public void ImportRemoteCertificate(string base64EncodedCertificate)
+    {
+        // import certificate of already paired client        
+        var imported = new X509Certificate2(Convert.FromBase64String(base64EncodedCertificate));
+        if (imported == null || imported.HasPrivateKey) throw new ArgumentException("Provided certificate cannot be used for this operation");
+        acceptedRemoteCertificate = imported;
+        pairing = false;
+    }
+
     public void CompletePairing()
     {
         if (pairingCertificate == null) return;
-        serverCertificateStore.SetAcceptedRemoteCertificate(pairingCertificate);
-
+        acceptedRemoteCertificate = pairingCertificate; //TODO: add to certstore for persistence
     }
 
     private async Task HandleConnection(ITransportLayer transportLayer, CancellationToken token)
@@ -91,7 +99,7 @@ public class SynchronizationServer
         if (!useTls) return new TcpClientAdapter(tcpClient);
         RemoteCertificateValidationCallback certificateValidation = new((object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
         {
-            if (Pairing)
+            if (pairing)
             {
                 // in pairing mode, the client certificate is not known
                 // store the received certificate
@@ -100,10 +108,10 @@ public class SynchronizationServer
                 return true;
             }
 
-            return serverCertificateStore.AccpetedCertificate != null && serverCertificateStore.AccpetedCertificate.Equals(certificate);
+            return acceptedRemoteCertificate != null && acceptedRemoteCertificate.Equals(certificate);
         }
         );
-        return new TlsTcpClientAdapter(tcpClient, certificateValidation, certificate);
+        return new TlsTcpClientAdapter(tcpClient, certificateValidation, localCertificate);
     }
 
 }
