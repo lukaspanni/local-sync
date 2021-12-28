@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization;
 
-public class SynchronizationClient : SynchronizationBase, IDisposable
+public class DataTransferClient : DataTransferBase, IDisposable
 {
 
     private ITcpClient? tcpClient;
@@ -14,9 +14,9 @@ public class SynchronizationClient : SynchronizationBase, IDisposable
     private string RemoteHost => acceptedRemoteCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
 
 
-    public SynchronizationClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
+    public DataTransferClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SynchronizationClient(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testclient")
+    internal DataTransferClient(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testclient")
     {
     }
 

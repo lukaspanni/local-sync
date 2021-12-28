@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization
 {
-    public abstract class SynchronizationBase
+    public abstract class DataTransferBase
     {
         protected X509Certificate2 localCertificate;
         protected X509Certificate2? acceptedRemoteCertificate;
@@ -15,7 +15,7 @@ namespace LocalSynchronization
         public int Port { get; private set; } = 4820;
         public byte[] PublicKeyBytes => localCertificate.Export(X509ContentType.Cert);
 
-        protected SynchronizationBase(string ipString, int port, CertificateStore certStore, string localCertificateName)
+        protected DataTransferBase(string ipString, int port, CertificateStore certStore, string localCertificateName)
         {
             IPAddress = IPAddress.Parse(ipString);
             Port = port;
