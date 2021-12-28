@@ -6,16 +6,16 @@ using System.Text;
 
 namespace LocalSynchronization;
 
-public class SynchronizationServer : SynchronizationBase
+public class DataTransferServer : DataTransferBase
 {
     private bool pairing = true;
     private TcpListener? listener;
     private CancellationTokenSource tokenSource = new CancellationTokenSource();
     private X509Certificate2? pairingCertificate;   // temporary
 
-    public SynchronizationServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
+    public DataTransferServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SynchronizationServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
+    internal DataTransferServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
     {
     }
 

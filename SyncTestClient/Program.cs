@@ -5,7 +5,7 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        using var client = new SynchronizationClient("127.0.0.1", 8080);
+        using var client = new DataTransferClient("127.0.0.1", 8080);
 
         Console.Write("Enter server certificate: ");
         var base64EncodedCertificate = Console.ReadLine();
