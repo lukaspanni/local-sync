@@ -4,20 +4,14 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 
 namespace LocalSynchronization;
 
-public class DataTransferServer : DataTransferBase
+public class SecureDataTransferServer : SecureDataTransferBase
 {
     private bool pairing = false;
     private bool certificateImported = false;
-    private bool connected = false;
     private ReadOnlyMemory<byte> pairingSecret;
-    private TcpListener? listener;
-    private ITcpClient? tcpClient;
-    protected ITransportLayer? transportLayer;
-    private CancellationTokenSource tokenSource = new CancellationTokenSource();
     private X509Certificate2? pairingCertificate;   // temporary
 
     public byte[] SharedSecret
@@ -29,9 +23,9 @@ public class DataTransferServer : DataTransferBase
         }
     }
 
-    public DataTransferServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
+    public SecureDataTransferServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal DataTransferServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
+    internal SecureDataTransferServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
     {
     }
 
@@ -83,41 +77,6 @@ public class DataTransferServer : DataTransferBase
         return connected;
     }
 
-    public async Task<DataResponse> ReceiveData()
-    {
-        if (!connected || transportLayer == null) throw new InvalidOperationException("Not Connected");
-        try
-        {
-            var message = await transportLayer.ReceiveMessage().ConfigureAwait(false);
-            Console.WriteLine("Received {0} bytes: {1}", message.Length, Encoding.UTF8.GetString(message.Payload.ToArray()));
-            await SendAckForMessage(message).ConfigureAwait(false);
-            return new DataResponse(ResponseState.Ok, message.Payload);
-        }
-        catch (Exception ex)
-        {
-            //return error
-            return new DataResponse(ResponseState.Error, null);
-        }
-    }
-
-    public async Task<bool> SendData(ReadOnlyMemory<byte> data)
-    {
-        if (!connected || transportLayer == null) throw new InvalidOperationException("Not Connected");
-        try
-        {
-            var message = new TransportLayerMessage(data.Length, data);
-            Console.WriteLine("Sending {0} bytes", message.Length);
-            await transportLayer.SendMessage(message).ConfigureAwait(false); // send data
-            var ack = await transportLayer.ReceiveMessage().ConfigureAwait(false); // receive ack
-            //TODO: check ack
-            return true;
-        }
-        catch (Exception ex)
-        {
-            return false;
-        }
-    }
-
     public void CloseConnection()
     {
         connected = false;
@@ -128,20 +87,15 @@ public class DataTransferServer : DataTransferBase
 
     public override void Dispose()
     {
-        CancelRunningOperations();
-        //TODO
+        tokenSource.Cancel();
+
         transportLayer?.Dispose();
         tcpClient?.Dispose();
     }
 
-    public void CancelRunningOperations()
-    {
-        tokenSource.Cancel();
-    }
 
-    protected override ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true)
+    protected override ITcpClient BuildClient(TcpClient tcpClient)
     {
-        if (!useTls) return new TcpClientAdapter(tcpClient);
         RemoteCertificateValidationCallback certificateValidation = new((object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
         {
             if (pairing)
@@ -164,7 +118,7 @@ public class DataTransferServer : DataTransferBase
         try
         {
             Console.WriteLine("Listening on {0}:{1}", IPAddress.ToString(), Port);
-            listener = new TcpListener(IPAddress, Port);
+            var listener = new TcpListener(IPAddress, Port);
             listener.Start();
             TcpClient rawClient = await listener.AcceptTcpClientAsync(tokenSource.Token).ConfigureAwait(false);
             tcpClient = BuildClient(rawClient);
@@ -189,13 +143,5 @@ public class DataTransferServer : DataTransferBase
         connected = true;
         Console.WriteLine("Client successfuly paired");
     }
-
-    protected async Task SendAckForMessage(TransportLayerMessage message)
-    {
-        if (transportLayer == null) throw new InvalidOperationException("Not Connected");
-        var ack = new TransportLayerMessage(0b11, message.Length, new ReadOnlyMemory<byte>());
-        await transportLayer.SendMessage(ack).ConfigureAwait(false);
-    }
-
 }
 

@@ -4,11 +4,11 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var server = new DataTransferServer("0.0.0.0", 8080);
+        var server = new SecureDataTransferServer("0.0.0.0", 8080);
         Console.CancelKeyPress += delegate
         {
             Console.WriteLine("Stopping");
-            server.CancelRunningOperations();
+            server.Dispose();
         };
 
         Console.WriteLine($"Server certificate: {Convert.ToBase64String(server.PublicKeyBytes)}");
