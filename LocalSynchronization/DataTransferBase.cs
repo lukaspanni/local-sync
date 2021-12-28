@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization
 {
-    public abstract class DataTransferBase
+    public abstract class DataTransferBase : IDisposable
     {
         protected X509Certificate2 localCertificate;
         protected X509Certificate2? acceptedRemoteCertificate;
@@ -31,5 +31,14 @@ namespace LocalSynchronization
         }
 
         protected abstract ITcpClient BuildClient(TcpClient tcpClient, bool useTls = true);
+
+        public abstract void Dispose();
     }
+
+    public enum ResponseState
+    {
+        Ok,
+        Error
+    }
+    public record DataResponse(ResponseState State, ReadOnlyMemory<byte>? Data);
 }
