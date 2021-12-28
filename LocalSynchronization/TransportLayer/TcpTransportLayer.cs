@@ -29,9 +29,8 @@ public class TcpTransportLayer : ITransportLayer
         var TimeoutTask = Task.Delay(TimeSpan.FromSeconds(readTimeoutSeconds));
         byte[]? receiveBuffer = null;
         var readBuffer = new byte[2048];
-        int dataLength = 0;
+        int dataLength;
         int receiveBufferIndex = 0;
-        byte startByte = 0;
         do
         {
             var readTask = tcpClient.ReceiveAsync(readBuffer, 0, readBuffer.Length, tokenSource.Token);

@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LocalSynchronization;
 
-public class DataTransferClient : DataTransferBase, IDisposable
+public class DataTransferClient : DataTransferBase
 {
 
     private ITcpClient? tcpClient;
@@ -13,11 +13,20 @@ public class DataTransferClient : DataTransferBase, IDisposable
 
     private string RemoteHost => acceptedRemoteCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
 
-
     public DataTransferClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
     internal DataTransferClient(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testclient")
     {
+    }
+
+    public async Task Pair(ReadOnlyMemory<byte> secret)
+    {
+        if (transportLayer == null) throw new InvalidOperationException("Connection has to be established first");
+        var message = new TransportLayerMessage(0x01 | 1 << 2, secret.Length, secret);
+        await transportLayer.SendMessage(message);
+        var ack = await transportLayer.ReceiveMessage();
+
+        //TODO: verify pairing success
     }
 
     public async Task Connect()
@@ -28,17 +37,23 @@ public class DataTransferClient : DataTransferBase, IDisposable
         transportLayer = new TcpTransportLayer(tcpClient);
     }
 
-    public async Task Send(byte[] dataBuffer)
+    //TODO: pull common methods up to base
+    public async Task<bool> SendData(ReadOnlyMemory<byte> data)
     {
         if (transportLayer == null) throw new InvalidOperationException();
-        var message = new TransportLayerMessage(dataBuffer.Length, new ReadOnlyMemory<byte>(dataBuffer));
+        var message = new TransportLayerMessage(data.Length, data);
         await transportLayer.SendMessage(message);
+        var ack = await transportLayer.ReceiveMessage().ConfigureAwait(false); // receive ack
+        //TODO: verify ack
+        return true;
     }
 
-    public async Task<TransportLayerMessage> Receive()
+    public async Task<DataResponse> ReceiveData()
     {
         if (transportLayer == null) throw new InvalidOperationException();
-        return await transportLayer.ReceiveMessage();
+        var message = await transportLayer.ReceiveMessage();
+        await SendAck(message);
+        return new DataResponse(ResponseState.Ok, message.Payload);
     }
 
 
@@ -47,7 +62,7 @@ public class DataTransferClient : DataTransferBase, IDisposable
         tcpClient?.Close();
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         Disconnect();
         transportLayer?.CancelRunningOperations();
@@ -63,6 +78,13 @@ public class DataTransferClient : DataTransferBase, IDisposable
             acceptedRemoteCertificate != null && acceptedRemoteCertificate.Equals(certificate)
         );
         return new TlsTcpClientAdapter(tcpClient, certificateValidation, RemoteHost, localCertificate);
+    }
+
+    protected async Task SendAck(TransportLayerMessage message)
+    {
+        if (transportLayer == null) throw new InvalidOperationException("Not Connected");
+        var ack = new TransportLayerMessage(0b11, message.Length, new ReadOnlyMemory<byte>());
+        await transportLayer.SendMessage(ack).ConfigureAwait(false);
     }
 }
 

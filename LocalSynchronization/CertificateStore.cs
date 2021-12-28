@@ -6,6 +6,7 @@ namespace LocalSynchronization;
 
 public class CertificateStore
 {
+    private const int SecretLength = 8;
     private ISecurePersistenceProvider persistenceProvider;
     private Dictionary<string, X509Certificate2> localCertificates = new Dictionary<string, X509Certificate2>();
     private Dictionary<string, X509Certificate2> remoteCertificates = new Dictionary<string, X509Certificate2>();
@@ -43,6 +44,11 @@ public class CertificateStore
         var request = new CertificateRequest(name, ecdsa, HashAlgorithmName.SHA256);
         var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddSeconds(-5), DateTimeOffset.UtcNow.AddYears(1));
         return new X509Certificate2(cert.Export(X509ContentType.Pkcs12));
+    }
+
+    internal ReadOnlyMemory<byte> GenerateSecretBytes()
+    {
+        return new ReadOnlyMemory<byte>(RandomNumberGenerator.GetBytes(SecretLength));
     }
 }
 

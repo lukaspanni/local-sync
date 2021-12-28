@@ -12,7 +12,12 @@ public class Program
         if (base64EncodedCertificate == null) throw new ArgumentException("Invalid input");
         client.ImportRemoteCertificate(base64EncodedCertificate);
 
+        Console.Write("Enter server secret: ");
+        var base64EncodedSecret = Console.ReadLine();
+        if (base64EncodedSecret== null) throw new ArgumentException("Invalid input");
+
         await client.Connect();
+        await client.Pair(new ReadOnlyMemory<byte>(Convert.FromBase64String(base64EncodedSecret)));
         Console.WriteLine("Connected to {0}:{1}", client.IPAddress.ToString(), client.Port);
         while (true)
         {
@@ -20,9 +25,7 @@ public class Program
             var message = Console.ReadLine();
             if (message == null) break;
             var sendBuffer = Encoding.UTF8.GetBytes(message);
-            await client.Send(sendBuffer);
-            var response = await client.Receive();
-            Console.WriteLine("server received {1} bytes", BitConverter.ToString(new byte[] { response.StartByte }), response.Length);
+            await client.SendData(sendBuffer);
         }
 
     }

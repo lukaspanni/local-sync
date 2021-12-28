@@ -8,12 +8,20 @@ public class Program
         Console.CancelKeyPress += delegate
         {
             Console.WriteLine("Stopping");
-            server.Stop();
+            server.CancelRunningOperations();
         };
 
         Console.WriteLine($"Server certificate: {Convert.ToBase64String(server.PublicKeyBytes)}");
-        server.StartListening();
-        while (true)
-        { await Task.Delay(100); }
+
+        server.PreparePair();
+        Console.WriteLine($"Secret bytes: { Convert.ToBase64String(server.SharedSecret)}");
+
+
+        await server.AcceptPairRequest();
+
+        await server.ReceiveData();
+
+        server.CloseConnection();
+
     }
 }

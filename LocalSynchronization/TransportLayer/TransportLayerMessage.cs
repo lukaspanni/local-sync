@@ -2,6 +2,7 @@
 
 // startByte & 0b01 always != 0
 // startByte & 0b10 != 0 -> message without data = "ACK"
+// startByte & 0b100 != 0 -> pairing request containing secret
 public class TransportLayerMessage
 {
     public byte StartByte { get; init; }
