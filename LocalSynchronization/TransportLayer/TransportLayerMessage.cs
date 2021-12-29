@@ -1,5 +1,14 @@
 ﻿namespace LocalSynchronization;
 
+public enum MessageType
+{
+    Standard = 0b01,
+    Ack = 0b11,
+    Error = 0b00,
+    PairingRequest = 0b101,
+    PairingResponse = 0b111
+}
+
 // startByte & 0b01 always != 0
 // startByte & 0b10 != 0 -> message without data = "ACK"
 // startByte & 0b100 != 0 -> pairing request containing secret
@@ -9,9 +18,11 @@ public class TransportLayerMessage
     public int Length { get; init; }
     public ReadOnlyMemory<byte> Payload { get; init; }
 
-    public TransportLayerMessage(int length, ReadOnlyMemory<byte> payload) : this(0x01, length, payload) { }
+    public TransportLayerMessage(ReadOnlyMemory<byte> payload): this((byte)MessageType.Standard, payload.Length, payload) { }
+    public TransportLayerMessage(MessageType type, int length): this((byte)type, length, new ReadOnlyMemory<byte>()) { }
+    public TransportLayerMessage(MessageType type, int length, ReadOnlyMemory<byte> payload) : this((byte)type, length, payload) { }
 
-    public TransportLayerMessage(byte startByte, int length, ReadOnlyMemory<byte> payload)
+    private TransportLayerMessage(byte startByte, int length, ReadOnlyMemory<byte> payload)
     {
         StartByte = startByte;
         Length = length;

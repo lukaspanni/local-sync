@@ -7,6 +7,7 @@ namespace LocalSynchronization;
 
 public class SecureDataTransferClient : SecureDataTransferBase
 {
+
     private string RemoteHost => acceptedRemoteCertificate?.GetNameInfo(X509NameType.SimpleName, false) ?? "";
 
     public SecureDataTransferClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
@@ -15,14 +16,18 @@ public class SecureDataTransferClient : SecureDataTransferBase
     {
     }
 
-    public async Task Pair(ReadOnlyMemory<byte> secret)
+    public async Task<bool> Pair(ReadOnlyMemory<byte> secret)
     {
         if (transportLayer == null) throw new InvalidOperationException("Connection has to be established first");
-        var message = new TransportLayerMessage(0x01 | 1 << 2, secret.Length, secret);
+        var message = new TransportLayerMessage(MessageType.PairingRequest, secret.Length, secret);
         await transportLayer.SendMessage(message);
         var ack = await transportLayer.ReceiveMessage();
-
-        //TODO: verify pairing success
+        if (ack != null && ack.StartByte == (byte)MessageType.PairingResponse)
+            return true;
+        
+        Disconnect(); // close connection on pair failure
+        return false;
+        //TODO: provide more data on failure, maybe exception
     }
 
     public async Task Connect()
@@ -37,6 +42,7 @@ public class SecureDataTransferClient : SecureDataTransferBase
     public void Disconnect()
     {
         tcpClient?.Close();
+        connected = false;
     }
 
     public override void Dispose()
