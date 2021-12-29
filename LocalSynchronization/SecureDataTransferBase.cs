@@ -12,7 +12,7 @@ namespace LocalSynchronization
         protected X509Certificate2? acceptedRemoteCertificate;
         protected CertificateStore certificateStore;
         protected ITcpClient? tcpClient;
-        protected ITransportLayer? transportLayer;
+        internal ITransportLayer? transportLayer;
         protected CancellationTokenSource tokenSource = new CancellationTokenSource();
         protected bool connected = false;
 
@@ -42,7 +42,7 @@ namespace LocalSynchronization
             if (!connected || transportLayer == null) throw new InvalidOperationException("Not Connected");
             try
             {
-                var message = new TransportLayerMessage(data.Length, data);
+                var message = new TransportLayerMessage(data);
                 Console.WriteLine("Sending {0} bytes", message.Length);
                 await transportLayer.SendMessage(message).ConfigureAwait(false); // send data
                 var ack = await transportLayer.ReceiveMessage().ConfigureAwait(false); // receive ack
@@ -73,10 +73,10 @@ namespace LocalSynchronization
         }
         public abstract void Dispose();
 
-        protected async Task SendAckForMessage(TransportLayerMessage message)
+        internal async Task SendAckForMessage(TransportLayerMessage message)
         {
             if (transportLayer == null) throw new InvalidOperationException("Not Connected");
-            var ack = new TransportLayerMessage(0b11, message.Length, new ReadOnlyMemory<byte>());
+            var ack = new TransportLayerMessage(MessageType.Ack, message.Length);
             await transportLayer.SendMessage(ack).ConfigureAwait(false);
         }
 

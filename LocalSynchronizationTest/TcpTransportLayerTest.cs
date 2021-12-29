@@ -33,7 +33,7 @@ namespace LocalSynchronizationTest
             Assert.True(clientMock.Object.Connected);
             var transportLayer = new TcpTransportLayer(clientMock.Object);
 
-            var message = new TransportLayerMessage(0x01, 4, new ReadOnlyMemory<byte>(new byte[] { 0, 1, 2, 3 }));
+            var message = new TransportLayerMessage(MessageType.Standard, 4, new ReadOnlyMemory<byte>(new byte[] { 0, 1, 2, 3 }));
             transportLayer.SendMessage(message).Wait();
 
             var expectedBytes = new byte[9] { 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03 };
@@ -54,7 +54,7 @@ namespace LocalSynchronizationTest
 
             TransportLayerMessage message = transportLayer.ReceiveMessage().GetAwaiter().GetResult();
 
-            var expectedMessage = new TransportLayerMessage(0x01, 4, new ReadOnlyMemory<byte>(new byte[] { 0, 1, 2, 3 }));
+            var expectedMessage = new TransportLayerMessage(MessageType.Standard, 4, new ReadOnlyMemory<byte>(new byte[] { 0, 1, 2, 3 }));
 
             Assert.Equal(expectedMessage.StartByte, message.StartByte);
             Assert.Equal(expectedMessage.Length, message.Length);
@@ -88,7 +88,7 @@ namespace LocalSynchronizationTest
 
             TransportLayerMessage message = transportLayer.ReceiveMessage().GetAwaiter().GetResult();
 
-            var expectedMessage = new TransportLayerMessage(0x01, 2048, new ReadOnlyMemory<byte>(dataBytes));
+            var expectedMessage = new TransportLayerMessage(MessageType.Standard, 2048, new ReadOnlyMemory<byte>(dataBytes));
 
             Assert.Equal(expectedMessage.StartByte, message.StartByte);
             Assert.Equal(expectedMessage.Length, message.Length);

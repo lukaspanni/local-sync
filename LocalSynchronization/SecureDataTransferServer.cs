@@ -51,6 +51,7 @@ public class SecureDataTransferServer : SecureDataTransferBase
 
         var secretMessage = await transportLayer.ReceiveMessage().ConfigureAwait(false);
 
+        bool hasError = false;
         try
         {
             if ((secretMessage.StartByte & 0b100) == 0) throw new Exception("Did not receive a pairing request");
@@ -60,11 +61,19 @@ public class SecureDataTransferServer : SecureDataTransferBase
         }
         catch (Exception ex)
         {
-            
+            hasError = true;
         }
 
-        //TODO: Send Pairing status to client
-        await SendAckForMessage(secretMessage);
+        TransportLayerMessage ack;
+        if (!hasError)
+        {
+            ack = new TransportLayerMessage(MessageType.PairingResponse, secretMessage.Length);
+        }
+        else
+        {
+            ack = new TransportLayerMessage(MessageType.Error, secretMessage.Length);
+        }
+        await transportLayer.SendMessage(ack);
         CompletePairing();
 
     }

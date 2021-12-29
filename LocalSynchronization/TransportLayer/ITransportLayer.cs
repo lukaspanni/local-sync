@@ -1,8 +1,8 @@
 ﻿namespace LocalSynchronization;
 
-public interface ITransportLayer : IDisposable
+internal interface ITransportLayer : IDisposable
 {
-    Task SendMessage(TransportLayerMessage message);
-    Task<TransportLayerMessage> ReceiveMessage();
+    internal Task SendMessage(TransportLayerMessage message);
+    internal Task<TransportLayerMessage> ReceiveMessage();
     void CancelRunningOperations();
 }
