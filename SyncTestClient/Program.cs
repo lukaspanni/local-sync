@@ -1,10 +1,11 @@
 ﻿using LocalSynchronization;
 using System.Text;
+
 public class Program
 {
-
     public static async Task Main(string[] args)
     {
+        var store = new CertificateStore();
         using var client = new SecureDataTransferClient("127.0.0.1", 8080);
 
         Console.Write("Enter server certificate: ");

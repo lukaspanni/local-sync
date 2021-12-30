@@ -12,7 +12,7 @@ public class SecureDataTransferClient : SecureDataTransferBase
 
     public SecureDataTransferClient(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SecureDataTransferClient(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testclient")
+    public SecureDataTransferClient(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testclient")
     {
     }
 

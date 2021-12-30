@@ -25,7 +25,7 @@ public class SecureDataTransferServer : SecureDataTransferBase
 
     public SecureDataTransferServer(string ipString, int port) : this(ipString, port, new CertificateStore()) { }
 
-    internal SecureDataTransferServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
+    public SecureDataTransferServer(string ipString, int port, CertificateStore certStore) : base(ipString, port, certStore, "testserver")
     {
     }
 

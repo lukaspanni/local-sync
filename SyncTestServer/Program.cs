@@ -4,7 +4,7 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var server = new SecureDataTransferServer("0.0.0.0", 8080);
+        using var server = new SecureDataTransferServer("0.0.0.0", 8080);
         Console.CancelKeyPress += delegate
         {
             Console.WriteLine("Stopping");
